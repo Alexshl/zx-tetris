@@ -1,6 +1,6 @@
 # Task 01: Setup toolchain + project skeleton
 
-**Status**: DONE
+**Status**: DEPRECATED — superseded by task 11 (Docker-эмулятор). Хостовая установка z88dk и Fuse больше не требуется.
 **Зависит от**: —
 **Цель**: Установить z88dk и Fuse, собрать минимальный `.tap`, который Fuse грузит и показывает «TETRIS» на экране. Это «hello world», проверяющий весь тулчейн.
 

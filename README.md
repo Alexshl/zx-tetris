@@ -37,7 +37,7 @@ graphics library.
 On a Mac in Fuse, the keyboard arrows are mapped to `Caps Shift + 5/6/7/8`
 on the Spectrum keyboard, which is what the code actually reads.
 
-## Build with Docker (recommended)
+## Build with Docker
 
 Host requirements: Docker (with Compose plugin, default in modern Docker
 Desktop) and a ZX Spectrum emulator — on macOS that's
@@ -46,17 +46,33 @@ The z88dk toolchain lives inside the image — no local clone, no 20-minute
 build on your machine.
 
 ```sh
-docker compose build                            # one-time, ~15-20 min — builds z88dk
-docker compose run --rm builder                 # produces build/tetris.tap
-docker compose run --rm builder make clean      # removes build/
+# Build & dev
+docker compose build                              # собрать/обновить образ
+docker compose run --rm build                     # собрать build/tetris.tap
+docker compose run --rm shell                     # интерактивный shell в контейнере
+
+# Test
+docker compose run --rm smoke                     # smoke-тест через ZRCP
+docker compose run --rm integration               # integration-сценарии
+
+# Debug
+BIN=build/tetris_CODE.bin docker compose run --rm trace
+CYCLES=200000 docker compose run --rm trace
+
+# Disassembly
+docker compose run --rm disasm                    # z88dk-dis с символами
+docker compose run --rm disasm-alt                # z80dasm
+
+# Research
+FILE=build/tetris.tap Q="..." docker compose run --rm investigate
 ```
 
 Same commands work in bash, zsh, fish, and PowerShell — no `make`
 required on the host.
 
-The container runs the `make` recipe defined in this `Makefile` (its
-`CMD` in the Dockerfile is `make`). It produces `build/tetris.tap` via
-a bind-mount and exits. Fuse runs natively because it's a GUI app.
+The container runs `make -f Makefile.inner` (its `CMD` in the Dockerfile).
+It produces `build/tetris.tap` via a bind-mount and exits.
+Fuse runs natively because it's a GUI app.
 
 Open the resulting tape in your emulator:
 
@@ -81,30 +97,6 @@ echo "GID=$(id -g)" >> .env
 macOS and Windows Docker Desktop bind-mounts handle ownership transparently;
 no `.env` needed.
 
-## Build natively (without Docker)
-
-If you already have z88dk on your machine (or prefer the fastest possible
-edit-build cycle):
-
-Requirements:
-
-- [z88dk](https://github.com/z88dk/z88dk) installed at `~/tools/z88dk` (or
-  adjust `Z88DK` env var). Build from source: `git clone --recursive ...
-  && ./build.sh`. On macOS you'll also need `gmp` and `gmake`:
-  `brew install gmp make`.
-- [Fuse for Mac](https://formulae.brew.sh/cask/fredm-fuse):
-  `brew install --cask fredm-fuse`.
-
-```bash
-export Z88DK=$HOME/tools/z88dk
-export PATH=$Z88DK/bin:$PATH
-export ZCCCFG=$Z88DK/lib/config
-
-make           # produces build/tetris.tap
-make run       # builds and opens the .tap in Fuse
-make clean     # removes build/
-```
-
 ## Project structure
 
 ```
@@ -115,7 +107,7 @@ src/
   render.c/h   direct screen writes, ROM-font glyph copy for text/HUD
   input.c/h    keyboard polling with autorepeat and edge detection
   sound.c/h    three SFX through z88dk bit_beep
-Makefile       z88dk newlib build (-clib=new, -create-app)
+Makefile.inner   z88dk newlib build (runs inside Docker)
 zpragma.inc    memory layout pragmas for 128K (STACKPTR, CRT_ORG_CODE)
 docs/tasks/    incremental build plan (10 tasks, RU)
 ```

@@ -19,14 +19,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build / run
 
 ```bash
-make            # собрать build/tetris.tap
-make run        # собрать и открыть в Fuse
-make clean      # очистить build/
+docker compose build                              # собрать/обновить образ (один раз, ~5-10 минут)
+docker compose run --rm build                     # собрать build/tetris.tap
+docker compose run --rm shell                     # интерактивный shell в контейнере
+docker compose run --rm smoke                     # smoke-тест: проверяет что .tap загружается и PC=0x0038
+docker compose run --rm integration               # интеграционные тесты через ZEsarUX ZRCP
 ```
 
-Требуется установленный `z88dk` в `$PATH` и `fredm-fuse` cask. Установка — task 01.
+Compose-конфигурация: `compose.yaml`. Переменные окружения: скопируй `.env.example` в `.env`.
 
-В Fuse: `Machine → Select → Spectrum 128`.
+Требуется только **Docker Desktop**. Хостовой `z88dk` и `fredm-fuse` не нужны.
+Подробности: `docker/README.md`.
 
 ## Architecture (big picture)
 
@@ -50,18 +53,34 @@ main.c            оркестрация цикла: input → game → render �
 - **`drop_period` зависит от уровня по NES-таблице** — не выдумывать своих значений (см. `07-scoring-levels.md`).
 - **`const`-таблицы (`piece_shapes`, `piece_colors`, period table)** должны попасть в code-сегмент, не съедая RAM. z88dk это делает автоматически при правильных pragma.
 
-## Workflow: 4-агентный пайплайн
+## Workflow: 5-агентный пайплайн
 
-Любая задача из `docs/tasks/` проходит через **четыре агента строго по порядку**:
+Любая задача из `docs/tasks/` проходит через **пять агентов строго по порядку**:
 
 1. **planner** — читает задачу, сверяется с состоянием кода и официальной z88dk документацией, выдаёт уточнённый план реализации. Если в задаче нет нужного API или формулы — ищет в интернете, **не выдумывает**.
 2. **coder** — реализует код по плану. Собирает `make`, фиксирует ошибки.
-3. **reviewer** — проверяет каждый пункт acceptance criteria из задачи, читает диф, может вернуть **REWORK** с конкретным списком проблем.
-4. **documenter** — обновляет статус задачи в `docs/tasks/INDEX.md` и в шапке файла задачи на **DONE**, добавляет короткую запись о том, что в итоге было сделано.
+3. **tester** — парсит секцию `## Test plan` из задачи, прогоняет соответствующие compose-сервисы, читает артефакты (`artifacts/smoke.txt`, `artifacts/integration-*.json`), возвращает **PASS / FAIL / INFRA_ERROR**. Не редактирует код.
+4. **reviewer** — проверяет каждый пункт acceptance criteria из задачи, читает диф и tester-артефакты, может вернуть **REWORK** с конкретным списком проблем.
+5. **documenter** — обновляет статус задачи в `docs/tasks/INDEX.md` и в шапке файла задачи на **DONE**, добавляет короткую запись о том, что в итоге было сделано.
 
-Если reviewer возвращает REWORK — управление переходит обратно к **coder** с конкретным списком замечаний. Если coder обнаруживает, что план не соответствует задаче — обратно к **planner**.
+Переходы:
+- Если **tester** возвращает **FAIL** — управление переходит к **coder** (или к **planner**, если `suggested_next_agent = planner`).
+- Если **tester** возвращает **INFRA_ERROR** — пайплайн останавливается без REWORK, пользователю сообщается о проблеме с инфраструктурой (Docker не отвечает).
+- Если **reviewer** возвращает **REWORK** — управление переходит обратно к **coder** с конкретным списком замечаний.
+- Если **coder** обнаруживает, что план не соответствует задаче — обратно к **planner**.
 
 Главный сеанс **не пишет код напрямую** для задач из `docs/tasks/`. Он только оркестрирует пайплайн.
+
+### Требование: Test plan в каждой задаче
+
+Каждый файл `docs/tasks/NN-*.md` **обязан** содержать секцию `## Test plan` с одним из режимов:
+- `skip: <причина>` — для задач без рантайм-поведения (документация, инфраструктура).
+- `smoke-only: <ожидание>` — для задач, где достаточно `make smoke`.
+- `scenarios: [name1, ...]` — для задач с конкретными integration-сценариями.
+
+Без этой секции tester вернёт FAIL с `suggested_next_agent = planner`.
+
+Шаблон новой задачи: `docs/tasks/_template.md`.
 
 ### Запуск пайплайна
 
@@ -74,13 +93,30 @@ main.c            оркестрация цикла: input → game → render �
 
 Без аргумента берётся первая `TODO` из `INDEX.md`.
 
-Подробные инструкции для каждой роли — в `.claude/agents/{planner,coder,reviewer,documenter}.md`. Сам пайплайн — в `.claude/skills/task/SKILL.md`.
+Подробные инструкции для каждой роли — в `.claude/agents/{planner,coder,tester,reviewer,documenter}.md`. Сам пайплайн — в `.claude/skills/task/SKILL.md`.
 
 ## Hardware reference
 
 Скил **`zx-arch`** (`.claude/skills/zx-arch/SKILL.md`) — справочник по архитектуре ZX Spectrum 48K/128K: memory map, screen layout (с формулой адреса пикселя), attribute file, keyboard matrix (port 0xFE), бипер, AY-3-8912, 50 Hz interrupt, 128K bank switching через 0x7FFD. Содержит проверенные факты со ссылками на breakintoprogram.co.uk, worldofspectrum.org, sinclair.wiki.zxnet.co.uk.
 
 Агенты `planner`/`coder`/`reviewer` обращаются к нему перед любой работой с прямыми адресами, портами или ручным расчётом screen-адресов.
+
+## Research-агент `investigator`
+
+Ad-hoc агент (НЕ участвует в 5-агентном пайплайне). Принимает произвольный Z80-бинарь и свободный вопрос пользователя.
+
+```bash
+FILE=build/tetris.tap Q="как устроен главный игровой цикл" docker compose run --rm investigate
+```
+
+`tools/investigate.sh` сначала делает recon (file, hexdump, strings, z88dk-dis, z80dasm) в `artifacts/investigations/<ts>-<slug>/`, затем главный сеанс вызывает `Task investigator` с указанием на эту директорию.
+
+Ограничения:
+- Модель: opus (явно прописана).
+- Read-only вне `artifacts/investigations/<dir>/`. Не редактирует src/, docs/, tools/, docker/, .claude/, Makefile, CLAUDE.md, zpragma.inc.
+- Tools: Read, Grep, Glob, Bash (whitelist: z88dk-dis, z80dasm, hexdump, xxd, file, strings, `docker compose run --rm disasm`/`disasm-alt`/`trace`/`integration`, python3), WebSearch, WebFetch.
+
+Полная инструкция: `.claude/agents/investigator.md`.
 
 ## Запреты
 

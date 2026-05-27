@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"zcc exit=$?\")",
+      "Bash(echo \"fuse exit=$?\")",
+      "Bash(make smoke *)",
+      "Bash(xxd artifacts/smoke.scr)",
+      "Bash(xxd -s 6144 -l 64 artifacts/smoke.scr)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(xargs ls -la)",
+      "Bash(echo \"MAKE_EXIT=$?\")",
+      "Bash(make integration *)",
+      "Bash(make disasm-alt *)",
+      "Bash(echo \"===EXIT $?===\")",
+      "Bash(make trace *)",
+      "Bash(echo \"Exit code: $?\")"
+    ]
+  }
+}

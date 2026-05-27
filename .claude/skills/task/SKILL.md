@@ -1,11 +1,11 @@
 ---
 name: task
-description: Run a task from docs/tasks/ through the 4-agent pipeline (planner → coder → reviewer → documenter). Usage — /task <id> for a specific task, or /task without args to pick up the next TODO. The skill orchestrates the pipeline, handles REWORK loops, and stops only when the task is DONE or genuinely blocked.
+description: Run a task from docs/tasks/ through the 5-agent pipeline (planner → coder → tester → reviewer → documenter). Usage — /task <id> for a specific task, or /task without args to pick up the next TODO. The skill orchestrates the pipeline, handles REWORK loops, and stops only when the task is DONE or genuinely blocked.
 ---
 
 # /task — Tetris task pipeline
 
-Запускает задачу из `docs/tasks/` через жёсткий пайплайн **planner → coder → reviewer → documenter**. Главный сеанс **не пишет код сам** — только оркестрирует агентов.
+Запускает задачу из `docs/tasks/` через жёсткий пайплайн **planner → coder → tester → reviewer → documenter**. Главный сеанс **не пишет код сам** — только оркестрирует агентов.
 
 ## Аргумент
 
@@ -57,6 +57,32 @@ Agent({
 - Перейти к шагу **2** заново с дополнительным feedback из `code_report_v1.feedback_to_planner` в промпте planner'a.
 - Максимум 3 итерации planner ↔ coder. Если на третий раз снова HALT — поменять статус на **BLOCKED** и сообщить пользователю.
 
+### 3.5. Tester phase
+
+Вызвать `tester`:
+
+```
+Agent({
+  subagent_type: "tester",
+  description: "Test task NN",
+  prompt: "Задача: docs/tasks/NN-*.md\nCoder report: <code_report_vN>\n\nПрогони test plan, выдай PASS/FAIL/INFRA_ERROR по своему шаблону."
+})
+```
+
+Сохрани вывод как `test_report_v1`.
+
+Если `test_report_v1.status == INFRA_ERROR`:
+- Поменять статус задачи на **BLOCKED** в INDEX.md и шапке файла задачи.
+- Сообщить пользователю: «инфраструктура: Docker не отвечает — запустите Docker Desktop и повторите».
+- **НЕ запускать REWORK**.
+
+Если `test_report_v1.status == FAIL`:
+- Если `suggested_next_agent == "planner"` → шаг **2** (planner) с feedback из failures.
+- Иначе → шаг **3** (coder) заново с failures в виде feedback.
+- Лимит coder ↔ tester = **3 итерации**. Если на третьей итерации снова FAIL — поменять статус на **BLOCKED** и сообщить пользователю.
+
+Если `test_report_v1.status == PASS` → шаг **4**.
+
 ### 4. Reviewer phase
 
 Вызвать `reviewer`:
@@ -65,7 +91,7 @@ Agent({
 Agent({
   subagent_type: "reviewer",
   description: "Review task NN",
-  prompt: "Задача: docs/tasks/NN-*.md\nRefined plan: <plan_vN>\nCoder report: <code_report_vN>\n\nВыдай verdict по своему шаблону."
+  prompt: "Задача: docs/tasks/NN-*.md\nRefined plan: <plan_vN>\nCoder report: <code_report_vN>\nTester report: <test_report_vN>\n\nВыдай verdict по своему шаблону."
 })
 ```
 
@@ -110,7 +136,8 @@ Next pending task: task MM — <title>
 - **Главный сеанс не пишет код напрямую.** Только Edit для пометки IN PROGRESS и финальный отчёт пользователю. Всё остальное — через Agent.
 - **Каждый агент получает только свои входы** (см. их system prompts). Не передавай coder'у задачу напрямую — он работает по плану от planner'a.
 - **Не запускай `make run`** — это ручная верификация пользователем в Fuse.
-- **Лимит итераций** — 3 для каждой пары (planner↔coder, coder↔reviewer). После лимита — BLOCKED.
+- **Лимит итераций** — 3 для каждой пары (planner↔coder, coder↔tester, coder↔reviewer). После лимита — BLOCKED.
+- **INFRA_ERROR от tester** — немедленный стоп без REWORK. Не запускать coder заново. Ждать пока пользователь поднимет инфраструктуру.
 - **BLOCKED** означает: проставить статус **BLOCKED** в INDEX.md и шапке задачи, сообщить пользователю конкретно, что заблокировало (последний feedback / последний issues-список).
 
 ## Что если задача 01 (setup-toolchain)

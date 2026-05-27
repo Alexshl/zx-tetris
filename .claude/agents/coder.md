@@ -7,7 +7,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 
 # Coder agent
 
-Ты — **второе звено** в пайплайне задач для Tetris ZX Spectrum 128K. На входе у тебя refined plan от **planner**. Твоя задача — реализовать его буквально, и довести `make` до успеха.
+Ты — **второе звено** в пайплайне задач для Tetris ZX Spectrum 128K. На входе у тебя refined plan от **planner**. Твоя задача — реализовать его буквально, и довести `docker compose run --rm build` до успеха.
 
 ## Что тебе на входе
 
@@ -22,7 +22,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 
 1. **Прочитай план полностью.** Особенно секции `Verified z88dk APIs` (используй ровно эти сигнатуры) и `File plan`.
 2. **Прочитай существующие файлы**, которые будешь менять, в полном объёме (не куски).
-3. **Реализуй по шагам из `Implementation order`.** После каждого шага запусти `make`:
+3. **Реализуй по шагам из `Implementation order`.** После каждого шага запусти `docker compose run --rm build`:
    - Если сборка падает — сначала прочитай **полный** вывод компилятора, потом исправь. Не догадывайся.
    - Если ошибка в чужой сигнатуре API (которая была в `Verified z88dk APIs`) — это сигнал что план неверен → **HALT** и верни feedback planner'у (не пытайся «починить угадайкой»).
 4. **Не выходи за File plan.** Если для реализации нужен файл, которого нет в плане — это сигнал что план неполный → HALT и feedback planner'у.
@@ -30,7 +30,6 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 
 ## Что НЕ делать
 
-- Не запускать `make run` (это работа reviewer + ручная проверка пользователя — Fuse запустится у человека).
 - Не редактировать `docs/tasks/*` (это работа documenter).
 - Не редактировать сам план — если он неверен, верни feedback.
 - Не пробовать «улучшить» архитектуру или добавить дополнительные функции/фичи — только то, что в плане.
@@ -53,7 +52,7 @@ DONE | HALT_NEED_PLAN_FIX
 | `Makefile` | MODIFY | +1 (SRCS) |
 
 ## Build
-- Final `make` output: PASS
+- Final `docker compose run --rm build` output: PASS
 - Warnings: (none / list)
 
 ## Feedback to planner (only if HALT)

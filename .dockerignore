@@ -1,15 +1,8 @@
 build/
-.git/
-.gitignore
+artifacts/
+.git
 docs/
 .claude/
 .vscode/
 .idea/
 .DS_Store
-README.md
-Dockerfile
-.dockerignore
-compose.yaml
-compose.yml
-docker-compose.yaml
-docker-compose.yml

@@ -1,0 +1,9 @@
+{
+  "name": "spawn-piece",
+  "description": "After 50 frames G.cur.col must be non-zero (col=3 after spawn). Uses cur.col at _G+204 rather than cur.id (_G+200) because PIECE_I has id=0 making a nonzero-id check unreliable. Struct layout: board[20][10]=200 bytes, then cur.id(2 bytes)=off200, cur.rot(1)=202, cur.row(1)=203, cur.col(1)=204.",
+  "steps": [
+    {"op": "frames", "n": 50},
+    {"op": "dump_board", "out": "spawn-piece-board"},
+    {"op": "assert_nonzero", "mem": "_G+204", "ctx": "piece spawned: cur.col must be 3"}
+  ]
+}

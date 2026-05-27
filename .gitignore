@@ -1,5 +1,6 @@
 # Build artifacts
 build/
+artifacts/
 
 # z88dk intermediate files (на случай если попадут в src/)
 *.o

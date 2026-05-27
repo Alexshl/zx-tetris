@@ -1,12 +1,49 @@
+x-svc-defaults: &svc-defaults
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  image: ${IMAGE_TAG:-zx-tetris-emu:latest}
+  user: "${UID:-1000}:${GID:-1000}"
+  working_dir: /work
+  volumes:
+    - ./:/work
+    - ./tools:/src/tools:ro
+
 services:
-  builder:
-    build: .
-    image: zx-tetris-builder
-    volumes:
-      - .:/app
-    working_dir: /app
-    # На Linux раскомментируй или выполни:
-    #   echo "UID=$(id -u)" > .env && echo "GID=$(id -g)" >> .env
-    # чтобы артефакты в build/ принадлежали тебе, а не root.
-    # На macOS/Windows Docker Desktop переводит ownership прозрачно.
-    user: "${UID:-1000}:${GID:-1000}"
+  build:
+    <<: *svc-defaults
+    command: ["build"]
+
+  shell:
+    <<: *svc-defaults
+    command: ["shell"]
+    tty: true
+    stdin_open: true
+
+  smoke:
+    <<: *svc-defaults
+    command: ["smoke"]
+
+  integration:
+    <<: *svc-defaults
+    command: ["integration"]
+
+  trace:
+    <<: *svc-defaults
+    command: ["trace", "${BIN:-build/tetris_CODE.bin}"]
+    environment:
+      CYCLES: "${CYCLES:-}"
+
+  disasm:
+    <<: *svc-defaults
+    command: ["disasm"]
+
+  disasm-alt:
+    <<: *svc-defaults
+    command: ["disasm-alt"]
+
+  investigate:
+    <<: *svc-defaults
+    command: ["investigate", "${FILE:-}", "${Q:-}"]
+    environment:
+      ORG: "${ORG:-0x6000}"
