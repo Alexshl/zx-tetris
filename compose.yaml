@@ -1,0 +1,12 @@
+services:
+  builder:
+    build: .
+    image: zx-tetris-builder
+    volumes:
+      - .:/app
+    working_dir: /app
+    # На Linux раскомментируй или выполни:
+    #   echo "UID=$(id -u)" > .env && echo "GID=$(id -g)" >> .env
+    # чтобы артефакты в build/ принадлежали тебе, а не root.
+    # На macOS/Windows Docker Desktop переводит ownership прозрачно.
+    user: "${UID:-1000}:${GID:-1000}"

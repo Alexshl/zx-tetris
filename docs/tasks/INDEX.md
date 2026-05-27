@@ -2,7 +2,7 @@
 
 **Проект**: Классический Тетрис для ZX Spectrum 128K
 **Тулчейн**: z88dk (C → Z80 asm) + Fuse for macOS
-**Полный план**: `~/.claude/plans/shimmering-giggling-cocoa.md`
+**Полный план**: [`docs/start.md`](../start.md)
 
 ## Прогресс
 

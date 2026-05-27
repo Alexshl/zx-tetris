@@ -4,6 +4,8 @@ Classic Tetris written in C, cross-compiled with [z88dk](https://github.com/z88d
 to Z80 machine code, packaged as a `.tap` tape image, runs in
 [Fuse](https://fuse-emulator.sourceforge.net/).
 
+![Gameplay](gameplay.png)
+
 A pet project to learn low-level 8-bit programming on real (well, emulated)
 hardware. Built from scratch: 1 cell = 1 character cell, direct writes to
 screen RAM at `0x4000` and the attribute file at `0x5800`, no high-level
@@ -35,7 +37,54 @@ graphics library.
 On a Mac in Fuse, the keyboard arrows are mapped to `Caps Shift + 5/6/7/8`
 on the Spectrum keyboard, which is what the code actually reads.
 
-## Build & Run
+## Build with Docker (recommended)
+
+Host requirements: Docker (with Compose plugin, default in modern Docker
+Desktop) and a ZX Spectrum emulator — on macOS that's
+[Fuse](https://formulae.brew.sh/cask/fredm-fuse) (`brew install --cask fredm-fuse`).
+The z88dk toolchain lives inside the image — no local clone, no 20-minute
+build on your machine.
+
+```sh
+docker compose build                            # one-time, ~15-20 min — builds z88dk
+docker compose run --rm builder                 # produces build/tetris.tap
+docker compose run --rm builder make clean      # removes build/
+```
+
+Same commands work in bash, zsh, fish, and PowerShell — no `make`
+required on the host.
+
+The container runs the `make` recipe defined in this `Makefile` (its
+`CMD` in the Dockerfile is `make`). It produces `build/tetris.tap` via
+a bind-mount and exits. Fuse runs natively because it's a GUI app.
+
+Open the resulting tape in your emulator:
+
+```sh
+open -a Fuse build/tetris.tap        # macOS
+fuse build/tetris.tap                # Linux
+# Windows: open build\tetris.tap with your Spectrum emulator of choice
+```
+
+In Fuse: `Machine → Select → Spectrum 128`, `Options → Sound → Enabled`.
+The tape auto-loads.
+
+**Linux ownership note.** By default the container runs as
+`UID:GID = 1000:1000`. If your host UID isn't 1000, files in `build/`
+will be owned by that fixed UID. Fix by creating `.env`:
+
+```sh
+echo "UID=$(id -u)"  > .env
+echo "GID=$(id -g)" >> .env
+```
+
+macOS and Windows Docker Desktop bind-mounts handle ownership transparently;
+no `.env` needed.
+
+## Build natively (without Docker)
+
+If you already have z88dk on your machine (or prefer the fastest possible
+edit-build cycle):
 
 Requirements:
 
@@ -46,8 +95,6 @@ Requirements:
 - [Fuse for Mac](https://formulae.brew.sh/cask/fredm-fuse):
   `brew install --cask fredm-fuse`.
 
-Build and run:
-
 ```bash
 export Z88DK=$HOME/tools/z88dk
 export PATH=$Z88DK/bin:$PATH
@@ -57,9 +104,6 @@ make           # produces build/tetris.tap
 make run       # builds and opens the .tap in Fuse
 make clean     # removes build/
 ```
-
-In Fuse, set `Machine → Select → Spectrum 128`, enable `Options → Sound → Enabled`
-for SFX. The tape auto-loads.
 
 ## Project structure
 

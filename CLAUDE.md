@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `docs/tasks/INDEX.md` — индекс с прогрессом, статусами (TODO/IN PROGRESS/BLOCKED/DONE) и порядком выполнения
 - `docs/tasks/NN-*.md` — каждая задача отдельным файлом со своими acceptance criteria
-- `~/.claude/plans/shimmering-giggling-cocoa.md` — полный архитектурный план (для понимания «почему именно так»)
+- `docs/start.md` — полный архитектурный план (для понимания «почему именно так»)
 
 Перед любым кодом — прочитать соответствующую задачу. Не отступать от её acceptance criteria и не добавлять фичи вне скоупа MVP (см. секцию «Вне скоупа MVP» в `INDEX.md`).
 
@@ -87,7 +87,7 @@ main.c            оркестрация цикла: input → game → render �
 - **Не выдумывать API z88dk.** Если функция не упомянута в задаче — найти в [z88dk wiki](https://github.com/z88dk/z88dk/wiki/Platform---Sinclair-ZX-Spectrum) или [getting-started doc](https://github.com/z88dk/z88dk/blob/master/doc/ZXSpectrumZSDCCnewlib_01_GettingStarted.md) через WebFetch/WebSearch перед использованием.
 - **Не выходить за скоуп задачи.** Если по ходу всплыла полезная фича, не описанная в acceptance criteria, — оставить заметку в файле задачи в секции «Вне MVP», но не реализовывать.
 - **Не менять архитектуру без обоснования.** Если задача требует перестройки модулей — это **BLOCKED**, новая задача, согласование с пользователем.
-- **Не правит `~/.claude/plans/shimmering-giggling-cocoa.md`** из этого репо — это глобальный план владельца, не артефакт проекта.
+- **Не правит `docs/start.md`** без явной просьбы пользователя — это исходный архитектурный план, который должен сохранять начальное состояние решений. Реальные отклонения от него фиксируются в completion notes задач.
 
 ## Стиль кода
 

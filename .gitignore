@@ -23,3 +23,6 @@ build/
 *.swp
 *.swo
 *~
+
+# Docker Compose local UID/GID override
+.env
