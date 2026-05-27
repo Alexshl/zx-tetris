@@ -1,0 +1,25 @@
+# Build artifacts
+build/
+
+# z88dk intermediate files (на случай если попадут в src/)
+*.o
+*.asm
+*.lis
+*.map
+*.sym
+*.def
+*.reloc
+*.bin
+*.tap
+*.sna
+*.z80
+
+# macOS
+.DS_Store
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
